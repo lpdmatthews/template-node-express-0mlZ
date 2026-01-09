@@ -5,6 +5,7 @@ import { initApp } from "./app";
 import { Env, initConfig } from "./config";
 import { initLogging } from "./logging";
 
+
 const main = async () => {
     const config = await initConfig();
     const logger = await initLogging(config);
@@ -29,3 +30,4 @@ const main = async () => {
 }
 
 main();
+

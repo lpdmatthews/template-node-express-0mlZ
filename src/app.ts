@@ -15,6 +15,10 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 
+//imports for pdf stuff
+import { createClient } from "@supabase/supabase-js";
+import { makeSimplePdfBuffer } from "./pdf";
+
 export type App = {
     requestListener: RequestListener;
     shutdown: () => Promise<void>;
@@ -36,6 +40,11 @@ export const initApp = async (
     logger: pino.Logger
 ): Promise<App> => {
     const app = express();
+    //superbase stuff
+    const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
     app.set('trust proxy', true);
     app.use(
         express.raw({
@@ -134,6 +143,76 @@ export const initApp = async (
         }
     );
 
+
+
+
+    //pdf job endpoint
+
+    
+    app.post("/jobs/:id/run", async (req: Request, res: Response) => {
+        const auth = req.headers["authorization"] ?? "";
+        if (auth !== `Bearer ${process.env.WORKER_SHARED_SECRET}`) {
+            return res.status(401).json({ error: "unauthorized" });
+        }
+
+        const jobId = req.params.id;
+
+        try {
+            await supabase
+            .from("pdf_jobs")
+            .update({ status: "processing" })
+            .eq("id", jobId);
+
+        const pdf = await makeSimplePdfBuffer(`Job ${jobId}`);
+        const path = `pdfs/${jobId}.pdf`;
+
+        const { error } = await supabase.storage
+            .from(process.env.PDF_BUCKET ?? "pdfs")
+            .upload(path, pdf, {
+                contentType: "application/pdf",
+                upsert: true,
+            });
+
+        if (error) throw error;
+
+        await supabase
+            .from("pdf_jobs")
+            .update({
+                status: "complete",
+                result_path: path,
+                error: null,
+            })
+            .eq("id", jobId);
+
+            return res.json({ ok: true, result_path: path });
+        } catch (err: any) {
+            asl.getStore()?.logger.error(err);
+
+            await supabase
+            .from("pdf_jobs")
+            .update({
+                status: "failed",
+                error: String(err?.message ?? err),
+            })
+            .eq("id", jobId);
+
+        return res.status(500).json({ ok: false });
+        }
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     app.get('/abort-signal-propagation', async (req, res) => {
         for (let i = 0; i < 10; i++) {
             // simulate some work
