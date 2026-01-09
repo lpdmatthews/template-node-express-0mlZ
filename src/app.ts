@@ -15,6 +15,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 
+
 //imports for pdf stuff
 import { createClient } from "@supabase/supabase-js";
 import { makeSimplePdfBuffer } from "./pdf";
@@ -148,7 +149,7 @@ export const initApp = async (
 
     //pdf job endpoint
 
-    
+
     app.post("/jobs/:id/run", async (req: Request, res: Response) => {
         const auth = req.headers["authorization"] ?? "";
         if (auth !== `Bearer ${process.env.WORKER_SHARED_SECRET}`) {
