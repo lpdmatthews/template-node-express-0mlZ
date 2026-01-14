@@ -18,7 +18,7 @@ import { Config } from './config';
 
 //imports for pdf stuff
 import { createClient } from "@supabase/supabase-js";
-import { makeSimplePdfBuffer } from "./pdf";
+import { makeOrderPdfBuffer, OrderPayload } from "./pdf";
 
 export type App = {
     requestListener: RequestListener;
@@ -157,6 +157,7 @@ export const initApp = async (
         }
 
         const jobId = req.params.id;
+        const payload = req.body as OrderPayload;
 
         try {
             await supabase
@@ -164,7 +165,7 @@ export const initApp = async (
             .update({ status: "processing" })
             .eq("id", jobId);
 
-        const pdf = await makeSimplePdfBuffer(`Job ${jobId}`);
+        const pdf = await makeOrderPdfBuffer(payload);
         const path = `pdfs/${jobId}.pdf`;
 
         const { error } = await supabase.storage
