@@ -157,7 +157,7 @@ export const initApp = async (
         }
 
         const jobId = req.params.id;
-        const payload = req.body as OrderPayload;
+        const payload = (req.body && typeof req.body === 'object' ? req.body : {}) as OrderPayload;
 
         try {
             await supabase
