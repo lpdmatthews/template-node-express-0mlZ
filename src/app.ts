@@ -18,7 +18,7 @@ import { Config } from './config';
 
 //imports for pdf stuff
 import { createClient } from "@supabase/supabase-js";
-import { makeOrderPdfBuffer, OrderPayload } from "./pdf";
+import { makeOrderPdfBuffer, OrderPayload } from "./pdf/index";
 
 export type App = {
     requestListener: RequestListener;
